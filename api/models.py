@@ -18,6 +18,7 @@ class TimesStampedModel(models.Model):
 class User(AbstractUser, TimesStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
+    username = None  # Remove username field
 
     objects = CustomUserManager()
 
@@ -34,12 +35,8 @@ class Profile(TimesStampedModel):
         ("Female", "Female"),
     ]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="profile"
-    )
-    profile_picture = models.ImageField(
-        upload_to="post_media/", blank=True, null=True
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="profile")
+    profile_picture = models.ImageField(upload_to="post_media/", blank=True, null=True)
     birth_date = models.DateField(null=True, blank=True)
     bio = models.TextField(blank=True, null=True)
     location = models.CharField(max_length=200, blank=True, null=True)
@@ -53,9 +50,7 @@ class Profile(TimesStampedModel):
 
 class Follow(TimesStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="follower"
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="follower")
     user_followed = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="followed"
     )
@@ -84,9 +79,7 @@ class Post(TimesStampedModel):
     category = models.ForeignKey(
         Category, on_delete=models.CASCADE, related_name="posts"
     )
-    user = models.ForeignKey(
-        User, related_name="post", on_delete=models.CASCADE
-    )
+    user = models.ForeignKey(User, related_name="post", on_delete=models.CASCADE)
 
     def __str__(self):
         return self.title
@@ -94,9 +87,7 @@ class Post(TimesStampedModel):
 
 class Like(TimesStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    post = models.ForeignKey(
-        Post, on_delete=models.CASCADE, related_name="like_post"
-    )
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="like_post")
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="like_by_user"
     )
@@ -110,9 +101,7 @@ class Like(TimesStampedModel):
 
 class Comment(TimesStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    post = models.ForeignKey(
-        Post, related_name="comment", on_delete=models.CASCADE
-    )
+    post = models.ForeignKey(Post, related_name="comment", on_delete=models.CASCADE)
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="user_comments"
     )
