@@ -13,7 +13,5 @@ class Command(BaseCommand):
             Category.objects.get_or_create(category_name=category_name)
 
         self.stdout.write(
-            self.style.SUCCESS(
-                "Database successfully initialized with default data"
-            )
+            self.style.SUCCESS("Database successfully initialized with default data")
         )
