@@ -1,18 +1,37 @@
 from django.urls import path
-from rest_framework_simplejwt.views import (TokenObtainPairView,
-                                            TokenRefreshView, TokenVerifyView)
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+    TokenVerifyView,
+)
 
-from api.views import (CategoryListCreateView,
-                       CategoryRetrieveUpdateDestroyView,
-                       CommentListCreateView, CommentRetrieveUpdateDestroyView,
-                       LoginView, LogoutView, PostCommentsListView,
-                       PostListCreateView, PostRetrieveUpdateDestroyView,
-                       SignUpView, UserCommentsListView, UserFollowersListView)
+from api.views import (
+    CategoryListCreateView,
+    CategoryRetrieveUpdateDestroyView,
+    CommentListCreateView,
+    CommentRetrieveUpdateDestroyView,
+    FollowCreateView,
+    LikeCreateView,
+    LoginView,
+    LogoutView,
+    PostCommentsListView,
+    PostLikeListView,
+    PostListCreateView,
+    PostRetrieveUpdateDestroyView,
+    SearchAPIView,
+    SignUpView,
+    UserCommentsListView,
+    UserFollowersListView,
+)
 
 urlpatterns = [
     # JWT
-    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path(
+        "api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"
+    ),
+    path(
+        "api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"
+    ),
     path("api/token/verify/", TokenVerifyView.as_view(), name="token_verify"),
     path("signup/", SignUpView.as_view(), name="signup"),
     path("login/", LoginView.as_view(), name="login"),
@@ -61,4 +80,16 @@ urlpatterns = [
         UserFollowersListView.as_view(),
         name="user_followers",
     ),
+    path("follow/", FollowCreateView.as_view(), name="follower"),
+    path(
+        "posts/<uuid:post_id>/like/",
+        LikeCreateView.as_view(),
+        name="like-create",
+    ),
+    path(
+        "posts/<uuid:post_id>/likes/",
+        PostLikeListView.as_view(),
+        name="likepost_list",
+    ),
+    path("search/", SearchAPIView.as_view(), name="search_filter"),
 ]
