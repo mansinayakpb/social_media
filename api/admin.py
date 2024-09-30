@@ -52,7 +52,7 @@ class ProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Follow)
 class FollowAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "user_followed")
+    list_display = ("id", "user", "user_following")
 
 
 @admin.register(Post)
