@@ -1,5 +1,6 @@
 # from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
+from django.utils.dateparse import parse_date
 from rest_framework import generics, permissions
 from rest_framework.filters import SearchFilter
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -20,6 +21,7 @@ from api.serializers import (
 )
 
 from .permissions import IsOwnerOrAdmin
+from .pagination import CustomPagination
 
 
 class SignUpView(generics.CreateAPIView):
@@ -104,6 +106,7 @@ class PostListCreateView(generics.ListCreateAPIView):
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
+    pagination_class = CustomPagination
     # filter_backends = [DjangoFilterBackend]
     # filterset_class = PostFilter
 
@@ -172,6 +175,7 @@ class PostCommentsListView(generics.ListAPIView):
     """Create an API to get all comments of a Post"""
 
     serializer_class = CommentSerializer
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         post_id = self.kwargs["post_id"]
@@ -182,6 +186,7 @@ class UserCommentsListView(generics.ListAPIView):
     """Create an API to get all comments of a User"""
 
     serializer_class = CommentSerializer
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         user_id = self.kwargs["user_id"]
@@ -250,6 +255,7 @@ class UserFollowersListView(generics.ListAPIView):
     """Create an API to get all followers of a User"""
 
     serializer_class = FollowSerializer
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         user_id = self.kwargs["user"]
@@ -276,6 +282,7 @@ class PostLikeListView(generics.ListAPIView):
     """create an API to get the list of likes of a user post"""
 
     serializer_class = LikeSerializer
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         post_id = self.kwargs["post_id"]
@@ -286,31 +293,74 @@ class SearchAPIView(generics.GenericAPIView):
     filter_backends = [SearchFilter]
 
     def get(self, request):
-        query = self.request.query_params.get("search", None)
+        title = self.request.query_params.get("title", None)
+        category = self.request.query_params.get("category", None)
+        comment = self.request.query_params.get("comment", None)
+        email = self.request.query_params.get("email", None)
+        start_date = self.request.query_params.get("start_date", None)
+        end_date = self.request.query_params.get("end_date", None)
 
-        if query:
-            # search users
-            users = User.objects.filter(Q(email__icontains=query))
-            user_serializer = UserSerializer(users, many=True)
+        results = {"users": [], "posts": [], "comments": [], "category": []}
 
-            # search for posts
-            posts = Post.objects.filter(Q(title__icontains=query))
-            post_serializer = PostSerializer(posts, many=True)
+        start_date = parse_date(start_date) if start_date else None
+        end_date = parse_date(end_date) if end_date else None
 
-            # serach for comment
-            comments = Comment.objects.filter(Q(comment__icontains=query))
-            comment_serializer = CommentSerializer(comments, many=True)
+        if title:
+            posts = Post.objects.filter(title__icontains=title)
+            serializer = PostSerializer(posts, many=True)
+            results['posts'] = serializer.data
 
-            # combine the results
-            results = {
-                "users": user_serializer.data,
-                "posts": post_serializer.data,
-                "comments": comment_serializer.data,
-            }
+        if category:
+            posts = Post.objects.filter(category__category_name__icontains=category)
+            serializer = PostSerializer(posts, many=True)
+            results['posts'] = serializer.data
 
-            return Response(results)
-        else:
-            return Response({"error": "No search query provided"})
+        if start_date and end_date:
+            posts = Post.objects.filter(created_at__range=[start_date, end_date])
+            results['posts'] = PostSerializer(posts, many=True).data
+             
+        if comment:
+            comments = Comment.objects.filter(comment__icontains=comment)
+            serializer = CommentSerializer(comments, many=True)
+            results['comments'] = serializer.data
+
+        # if start_date:
+        #     comments = Comment.objects.filter(created_at__date=[start_date])
+        #     results['comments'] = CommentSerializer(comments, many=True).data
+
+        if email:
+            users = User.objects.filter(email__icontains=email)
+            serializer = UserSerializer(users, many=True)
+            results['users'] = serializer.data
+
+        return Response(results)
 
 
-#   | (Q(created_at__range=(start_date, end_date)))
+# class SearchAPIView(generics.GenericAPIView):
+#     def get(self, request):
+#         title = request.query_params.get("title", None)
+#         category = request.query_params.get("category", None)
+#         comment = request.query_params.get("comment", None)
+#         email = request.query_params.get("email", None)
+
+#         results = {"users": [], "posts": [], "comments": []}
+
+#         # Filter posts by title or category (separately)
+#         if title:
+#             posts = Post.objects.filter(title__icontains=title)
+#             results['posts'] = PostSerializer(posts, many=True).data
+#         elif category:
+#             posts = Post.objects.filter(category__category_name__icontains=category)
+#             results['posts'] = PostSerializer(posts, many=True).data
+
+#         # Filter comments by comment content
+#         if comment:
+#             comments = Comment.objects.filter(comment__icontains=comment)
+#             results['comments'] = CommentSerializer(comments, many=True).data
+
+#         # Filter users by email
+#         if email:
+#             users = User.objects.filter(email__icontains=email)
+#             results['users'] = UserSerializer(users, many=True).data
+
+#         return Response(results)
