@@ -58,8 +58,10 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_FILTER_BACKENDS": ['rest_framework.filters.SearchFilter'],
-     
+    "DEFAULT_PAGINATION_CLASS": 'api.pagination.CustomPagination',  
+    'PAGE_SIZE': 10,
 }
+
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
