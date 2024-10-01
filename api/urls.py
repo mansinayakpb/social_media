@@ -1,28 +1,15 @@
 from django.urls import path
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-    TokenVerifyView,
-)
+from rest_framework_simplejwt.views import (TokenObtainPairView,
+                                            TokenRefreshView, TokenVerifyView)
 
-from api.views import (
-    CategoryListCreateView,
-    CategoryRetrieveUpdateDestroyView,
-    CommentListCreateView,
-    CommentRetrieveUpdateDestroyView,
-    FollowCreateView,
-    LikeCreateView,
-    LoginView,
-    LogoutView,
-    PostCommentsListView,
-    PostLikeListView,
-    PostListCreateView,
-    PostRetrieveUpdateDestroyView,
-    SearchAPIView,
-    SignUpView,
-    UserCommentsListView,
-    UserFollowersListView,
-)
+from api.views import (CategoryListCreateView,
+                       CategoryRetrieveUpdateDestroyView,
+                       CommentListCreateView, CommentRetrieveUpdateDestroyView,
+                       FollowCreateView, LikeCreateView, LoginView, LogoutView,
+                       PostCommentsListView, PostLikeListView,
+                       PostListCreateView, PostRetrieveUpdateDestroyView,
+                       SearchAPIView, SignUpView, UserCommentsListView,
+                       UserFollowersListView)
 
 urlpatterns = [
     # JWT
