@@ -2,17 +2,14 @@ from django.urls import path
 from rest_framework_simplejwt.views import (TokenObtainPairView,
                                             TokenRefreshView, TokenVerifyView)
 
-from api.views import (CategoryListCreateView,
-                       CategoryRetrieveUpdateDestroyView,
-                       CommentListCreateView, CommentRetrieveUpdateDestroyView,
-                       FollowCreateView, LikeCreateView, LoginView, LogoutView,
-                       PostCommentsListView, PostLikeListView,
-                       PostListCreateView, PostRetrieveUpdateDestroyView,
-                       SearchAPIView, SignUpView, UserCommentsListView,
-                       UserFollowersListView)
+from api.views import (CategoryView, CommentView, FollowView, LikeView,
+                       LoginView, LogoutView, PostView, SearchAPIView,
+                       SignUpView, ProfileCreateView)
 
 urlpatterns = [
+
     # JWT
+
     path(
         "api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"
     ),
@@ -23,60 +20,70 @@ urlpatterns = [
     path("signup/", SignUpView.as_view(), name="signup"),
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
+
     # Category URLs
-    path(
-        "categories/",
-        CategoryListCreateView.as_view(),
-        name="category_list_create",
-    ),
+
+    # To list all categories or create a new one
+    path("categories/", CategoryView.as_view(), name="category_list_create"),
+    # To retrieve, update, or delete a specific category
     path(
         "categories/<uuid:pk>/",
-        CategoryRetrieveUpdateDestroyView.as_view(),
-        name="category_detail",
+        CategoryView.as_view(),
+        name="category_detail_update_delete",
     ),
+
     # Post URLs
-    path("posts/", PostListCreateView.as_view(), name="post_list_create"),
+    
+    path("posts/", PostView.as_view(), name="post_list_create"),
     path(
         "posts/<uuid:pk>/",
-        PostRetrieveUpdateDestroyView.as_view(),
+        PostView.as_view(),
         name="post_detail",
     ),
+
     # Comment URLs
+    
+    # To create a comment
     path(
-        "comments/",
-        CommentListCreateView.as_view(),
-        name="comment_list_create",
+        "comments/", CommentView.as_view(), name="create_comment"
     ),
+    # To list comments for a specific post  
     path(
-        "comments/<uuid:pk>/",
-        CommentRetrieveUpdateDestroyView.as_view(),
-        name="comment_detail",
+        "comments/<uuid:post_id>/",
+        CommentView.as_view(),
+        name="list_comments_for_post",
     ),
+    # To update or delete a specific comment  
     path(
-        "posts/<uuid:post_id>/comments/",
-        PostCommentsListView.as_view(),
-        name="post_comments",
+        "comments/<uuid:post_id>/<uuid:pk>/",
+        CommentView.as_view(),
+        name="update_delete_comment",
     ),
+
+    # Follow URLs
+    
+    # To create a follow relationship
     path(
-        "users/<uuid:user_id>/comments/",
-        UserCommentsListView.as_view(),
-        name="user_comments",
+        "follow/", FollowView.as_view(), name="create_follow"
     ),
+    # To list all followers of a user  
     path(
-        "users/<uuid:user_id>/followers/",
-        UserFollowersListView.as_view(),
-        name="user_followers",
+        "follow/<uuid:user>/", FollowView.as_view(), name="list_followers"
     ),
-    path("follow/", FollowCreateView.as_view(), name="follower"),
+
+    # Like URLs
+    
+    # To create a like for a post
     path(
-        "posts/<uuid:post_id>/like/",
-        LikeCreateView.as_view(),
-        name="like-create",
+        "post/<uuid:post_id>/like/", LikeView.as_view(), name="create_like"
     ),
+    # To list all likes for a post  
     path(
-        "posts/<uuid:post_id>/likes/",
-        PostLikeListView.as_view(),
-        name="likepost_list",
+        "post/<uuid:post_id>/likes/", LikeView.as_view(), name="list_likes"
     ),
+
+    # Filter  
     path("search/", SearchAPIView.as_view(), name="search_filter"),
+
+    path("profile/", ProfileCreateView.as_view(), name="user_profile"),
 ]
