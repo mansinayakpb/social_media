@@ -1,5 +1,5 @@
 from django.utils.dateparse import parse_date
-from rest_framework import generics, permissions, status
+from rest_framework import generics, status
 from rest_framework.filters import SearchFilter
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
@@ -12,9 +12,10 @@ from api.serializers import (CategorySerializer, CommentSerializer,
                              FollowSerializer, LikeSerializer, PostSerializer,
                              UserSerializer)
 
-from .decorators import allow_any, is_admin_user, is_authenticated
+from .decorators import (allow_any, is_admin_user, is_authenticated,
+                         is_owner_or_admin)
 from .pagination import CustomPagination
-from .permissions import IsOwnerOrAdmin
+from rest_framework.permissions import IsAuthenticated
 
 
 class SignUpView(generics.CreateAPIView):
@@ -66,89 +67,226 @@ class LogoutView(APIView):
 # Category Views
 
 
-class CategoryListCreateView(generics.ListCreateAPIView):
-    """Everyone can view categories, only admin can create them"""
+# class CategoryView(generics.GenericAPIView):
+#     """Manage categories: view (anyone), create, update, delete (admin only)"""
+
+#     queryset = Category.objects.all()
+#     serializer_class = CategorySerializer
+
+#     @allow_any
+#     def get(self, request, *args, **kwargs):
+#         if "pk" in kwargs:
+#             return self.retrieve(request, *args, **kwargs)
+#         return self.list(request, *args, **kwargs)
+
+#     @is_admin_user
+#     def post(self, request, *args, **kwargs):
+#         return self.create(request, *args, **kwargs)
+
+#     @is_admin_user
+#     def put(self, request, *args, **kwargs):
+#         return self.update(request, *args, **kwargs)
+
+#     @is_admin_user
+#     def patch(self, request, *args, **kwargs):
+#         return self.partial_update(request, *args, **kwargs)
+
+#     @is_admin_user
+#     def delete(self, request, *args, **kwargs):
+#         return self.destroy(request, *args, **kwargs)
+
+#     def list(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(self.get_queryset(), many=True)
+#         return Response(serializer.data)
+
+#     def retrieve(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(self.get_object())
+#         return Response(serializer.data)
+
+#     def create(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data)
+#         if serializer.is_valid(raise_exception=True):
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def update(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(
+#             self.get_object(), data=request.data, partial=False
+#         )
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def partial_update(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(
+#             self.get_object(), data=request.data, partial=True
+#         )
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def destroy(self, request, *args, **kwargs):
+#         self.get_object().delete()
+#         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class CategoryView(generics.GenericAPIView):
+    """Manage categories: view (anyone), create, update, delete (admin only)"""
 
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
-    @allow_any  # Allows any user to perform GET requests
+    @allow_any
     def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
+        if "pk" in kwargs:
+            return self.retrieve(request, *args, **kwargs)
+        return self.list(request, *args, **kwargs)    
 
-    @is_admin_user  # Only superusers can perform POST requests
+    @is_admin_user
     def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
-
-    def perform_create(self, serializer):
-        """Save the category, admin only"""
-        serializer.save()
-
-
-class CategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    """Only admin can update or delete categories"""
-
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return self.create(request, *args, **kwargs)
 
     @is_admin_user
-    def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
+    def put(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_object(), data=request.data, partial=False)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)        
+        return self.update(request, *args, **kwargs)    
 
     @is_admin_user
-    def destroy(self, request, *args, **kwargs):
-        return super().destroy(request, *args, **kwargs)
+    def patch(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_object(), data=request.data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return self.partial_update(request, *args, **kwargs)
+
+    @is_admin_user
+    def delete(self, request, *args, **kwargs):
+        self.get_object().delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+        
+    def list(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_queryset(), many=True)
+        return Response(serializer.data)
 
     def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
+        serializer = self.get_serializer(self.get_object())
+        return Response(serializer.data)
 
 
 # Post Views
 
-class PostListCreateView(generics.ListCreateAPIView):
+
+class PostView(generics.GenericAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     parser_classes = [MultiPartParser, FormParser]
     pagination_class = CustomPagination
-
-    @is_authenticated
+    permission_classes = [IsAuthenticated]
+    
     def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+        # Let the parent class handle the post request
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @is_owner_or_admin
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=partial
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
+    @is_owner_or_admin
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response(
+            {"detail": "Post deleted successfully"},
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
+    def get(self, request, *args, **kwargs):
+
+        post_id = kwargs.get("pk")
+        if post_id:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data)
+
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
-class PostRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    """Only the owner or admin can update/delete"""
+# class PostListCreateView(generics.ListCreateAPIView):
+#     queryset = Post.objects.all()
+#     serializer_class = PostSerializer
+#     parser_classes = [MultiPartParser, FormParser]
+#     pagination_class = CustomPagination
 
-    quryset = Post.objects.all()
-    serializer_class = PostSerializer
-    parser_classes = [MultiPartParser, FormParser]
+#     @is_authenticated
+#     def post(self, request, *args, **kwargs):
+#         return super().post(request, *args, **kwargs)
 
-    def perform_update(self, serializer):
-        serializer.save(user=self.request.user)
 
-    def get_permissions(self):
-        if self.request.method in ["PUT", "PATCH", "DELETE"]:
-            return [IsOwnerOrAdmin()]
-        return [permissions.IsAuthenticated()]
+# class PostRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+#     """Only the owner or admin can update/delete"""
+
+#     quryset = Post.objects.all()
+#     serializer_class = PostSerializer
+#     parser_classes = [MultiPartParser, FormParser]
+
+#     @is_owner_or_admin
+#     @is_authenticated
+#     def perform_update(self, serializer):
+#         serializer.save(user=self.request.user)
+
+#     def delete(self, request, *args, **kwargs):
+#         object = self.get_object()
+#         object.delete()
+#         return Response({"detail": "Post deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+#     def get(self, request, *args, **kwargs):
+#         return super().get(request, *args, **kwargs)
 
 
 # Comment Views
 
-class CommentListCreateView(generics.ListCreateAPIView):
-    """List and create comments"""
+
+class CommentView(generics.GenericAPIView):
+    """Manage comments: list, create, update, delete"""
 
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-
-    @is_authenticated
-    def create(self, request, *args, **kwargs):
-        """Save the comment with the current user as the owner"""
-        post_id = self.request.data.get("post")
-        post = Post.objects.get(id=post_id)
+    pagination_class = CustomPagination
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, *args, **kwargs):
+        """Create a comment with the current user as the owner"""
         serializer = self.get_serializer(data=request.data)
-
         if serializer.is_valid():
-            serializer.save(user=self.request.user, post=post)
+            serializer.save(user=request.user)
             return Response(
                 {
                     "message": "Comment created successfully.",
@@ -164,86 +302,115 @@ class CommentListCreateView(generics.ListCreateAPIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-
-class CommentRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Comment.objects.all()
-    serializer_class = CommentSerializer
-
-    @is_authenticated
-    def perform_update(self, serializer):
-        """Only allow the comment owner to update it"""
-        if (
-            serializer.instance.user == self.request.user
-            or self.request.user.is_staff
-        ):
-            serializer.save()
-        else:
-            return Response({"detail": "Permission Denied!!"})
-
-    @is_authenticated
-    def destroy(self, request, *args, **kwargs):
-        """Get the comment instance"""
+    def put(self, request, *args, **kwargs):
+        """Update a comment"""
         instance = self.get_object()
-        if instance.user == self.request.user or self.request.user.is_staff:
+        serializer = self.get_serializer(instance, data=request.data)
+
+        if serializer.is_valid():
+            if instance.user == request.user or request.user.is_staff:
+                serializer.save()
+                return Response(
+                    {
+                        "message": "Comment updated successfully.",
+                        "comment": serializer.data,
+                    }
+                )
+            else:
+                return Response(
+                    {"detail": "Permission Denied!"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, *args, **kwargs):
+        """Delete a comment"""
+        instance = self.get_object()
+        if instance.user == request.user or request.user.is_staff:
             instance.delete()
-            return Response({"detail": "Comment deleted successfully!"})
-        else:
             return Response(
-                {"detail": "Permission Denied!!"},
-                status=status.HTTP_403_FORBIDDEN,
+                {"message": "Comment deleted successfully!"},
+                status=status.HTTP_204_NO_CONTENT,
             )
-
-
-class PostCommentsListView(generics.ListAPIView):
-    """Create an API to get all comments of a Post"""
-
-    serializer_class = CommentSerializer
-    pagination_class = CustomPagination
+        return Response(
+            {"detail": "Permission Denied!"}, status=status.HTTP_403_FORBIDDEN
+        )
 
     def get_queryset(self):
-        post_id = self.kwargs["post_id"]
-        return Comment.objects.filter(post__id=post_id)
+        """Retrieve comments based on post_id or user_id"""
+        post_id = self.kwargs.get("post_id")
+        user_id = self.kwargs.get("user_id")
+
+        if post_id:
+            return Comment.objects.filter(post__id=post_id)
+        elif user_id:
+            return Comment.objects.filter(user__id=user_id)
+        return Comment.objects.none()
+
+    def get(self, request, *args, **kwargs):
+        """List comments for a specific post or user"""
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
-class UserCommentsListView(generics.ListAPIView):
-    """Create an API to get all comments of a User"""
+class FollowView(generics.GenericAPIView):
+    """Create a follow and list all followers of a user"""
 
-    serializer_class = CommentSerializer
-    pagination_class = CustomPagination
-
-    def get_queryset(self):
-        user_id = self.kwargs["user_id"]
-        return Comment.objects.filter(user__id=user_id)
-
-
-class FollowCreateView(generics.CreateAPIView):
+    serializer_class = FollowSerializer
     queryset = Follow.objects.all()
-    serializer_class = FollowSerializer
-
-    @is_authenticated
-    def perform_create(self, serializer):
-        # Automatically assign the authenticated user to the 'user' field
-        serializer.save(user=self.request.user)
-
-
-class UserFollowersListView(generics.ListAPIView):
-    """Create an API to get all followers of a User"""
-
-    serializer_class = FollowSerializer
     pagination_class = CustomPagination
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, *args, **kwargs):
+        """Handles creating a follow relationship"""
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=self.request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def get(self, request, *args, **kwargs):
+        """Handles listing all followers of a user"""
+        queryset = self.get_queryset()  # Get the queryset based on the user
+        page = self.paginate_queryset(queryset)  # Paginate the queryset
+
+        if page is not None:
+            serializer = self.get_serializer(
+                page, many=True
+            )  # Serialize paginated data
+            return self.get_paginated_response(
+                serializer.data
+            )  # Return paginated response
+
+        serializer = self.get_serializer(
+            queryset, many=True
+        )  # Serialize all data if no pagination
+        return Response(serializer.data) 
 
     def get_queryset(self):
-        user_id = self.kwargs["user"]
-        # Use `filter` and ensure to handle the case when no followers exist
-        return Follow.objects.filter(user_following_id=user_id)
+        """Retrieve all followers for a specific user"""
+        user_id = self.kwargs.get("user")  
+        return Follow.objects.filter(
+            user_following_id=user_id
+        )  
 
 
-class LikeCreateView(generics.CreateAPIView):
+class LikeView(generics.GenericAPIView):
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
+    pagination_class = CustomPagination
+    permission_classes = [IsAuthenticated]
 
-    @is_authenticated
-    def perform_create(self, serializer):
+    def post(self, request, *args, **kwargs):
+        """Create a like for the post"""
+        serializer = self.get_serializer(data=request.data)
         post_id = self.kwargs.get("post_id")
         post = Post.objects.filter(id=post_id).first()
 
@@ -252,18 +419,28 @@ class LikeCreateView(generics.CreateAPIView):
                 {"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer.save(user=self.request.user, post=post)
+        if serializer.is_valid():
+            serializer.save(user=self.request.user, post=post)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-
-class PostLikeListView(generics.ListAPIView):
-    """create an API to get the list of likes of a user post"""
-
-    serializer_class = LikeSerializer
-    pagination_class = CustomPagination
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get_queryset(self):
-        post_id = self.kwargs["post_id"]
+        """Retrieve all likes for a specific post"""
+        post_id = self.kwargs.get("post_id")
         return Like.objects.filter(post=post_id)
+
+    def get(self, request, *args, **kwargs):
+        """List comments for a specific post or user"""
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class SearchAPIView(generics.GenericAPIView):
@@ -335,3 +512,23 @@ class SearchAPIView(generics.GenericAPIView):
             results["users"] = UserSerializer(users, many=True).data
 
         return Response(results)
+
+
+class ProfileCreateView(generics.GenericAPIView):
+    serializer_class = UserSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response(
+                {
+                    "id": user.id,
+                    "email": user.email,
+                    "message": "User created successfully"
+                },
+                status=status.HTTP_201_CREATED
+            )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
