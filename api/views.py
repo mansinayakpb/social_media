@@ -2,6 +2,7 @@ from django.utils.dateparse import parse_date
 from rest_framework import generics, status
 from rest_framework.filters import SearchFilter
 from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -15,7 +16,6 @@ from api.serializers import (CategorySerializer, CommentSerializer,
 from .decorators import (allow_any, is_admin_user, is_authenticated,
                          is_owner_or_admin)
 from .pagination import CustomPagination
-from rest_framework.permissions import IsAuthenticated
 
 
 class SignUpView(generics.CreateAPIView):
