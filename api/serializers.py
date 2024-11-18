@@ -48,7 +48,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ["id", "comment", "post"]
+        fields = ["id", "comment", "post", "post_id"]
 
     def create(self, validated_data):
         # Automatically assign the user when creating the comment
