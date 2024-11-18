@@ -2,24 +2,12 @@ from django.urls import path
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-    TokenVerifyView,
-)
+from rest_framework_simplejwt.views import (TokenObtainPairView,
+                                            TokenRefreshView, TokenVerifyView)
 
-from api.views import (
-    CategoryView,
-    CommentView,
-    FollowView,
-    LikeView,
-    LoginView,
-    LogoutView,
-    PostView,
-    ProfileCreateView,
-    SearchAPIView,
-    SignUpView,
-)
+from api.views import (CategoryView, CommentView, FollowView, LikeView,
+                       LoginView, LogoutView, PostView, ProfileCreateView,
+                       SearchAPIView, SignUpView)
 
 schema_view = get_schema_view(
     openapi.Info(
